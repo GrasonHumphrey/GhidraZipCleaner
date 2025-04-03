@@ -159,6 +159,7 @@ namespace GhidraZipCleaner
                     fs.Close();
                     //srROM = new StreamReader(openFileDialogROM.FileName);
                     srCGZF = new StreamReader(openFileDialogCleanGZF.FileName);
+                    MessageBox.Show("Import success!");
                 }
                 catch (SecurityException ex)
                 {
@@ -209,6 +210,7 @@ namespace GhidraZipCleaner
                     fs.Close();
                     srROM = new StreamReader(openFileDialogROM.FileName);
                     srGZF = new StreamReader(openFileDialogGZF.FileName);
+                    MessageBox.Show("Export success!");
                 }
                 catch (SecurityException ex)
                 {
