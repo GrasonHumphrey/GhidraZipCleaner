@@ -5,6 +5,8 @@ VisualStudioVersion = 17.8.34511.84
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GhidraZipCleaner", "GhidraZipCleaner\GhidraZipCleaner.csproj", "{DE86D108-DA48-4625-8BE1-6D8A73A6310C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GhidraZipCleaner_CLI", "GhidraZipCleaner_CLI\GhidraZipCleaner_CLI.csproj", "{07A8CF9A-D2CF-4D25-BCDE-A3CEC3DE1836}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{DE86D108-DA48-4625-8BE1-6D8A73A6310C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE86D108-DA48-4625-8BE1-6D8A73A6310C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE86D108-DA48-4625-8BE1-6D8A73A6310C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07A8CF9A-D2CF-4D25-BCDE-A3CEC3DE1836}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07A8CF9A-D2CF-4D25-BCDE-A3CEC3DE1836}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07A8CF9A-D2CF-4D25-BCDE-A3CEC3DE1836}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07A8CF9A-D2CF-4D25-BCDE-A3CEC3DE1836}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

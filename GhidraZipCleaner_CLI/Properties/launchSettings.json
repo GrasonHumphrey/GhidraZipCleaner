@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "GhidraZipCleaner_CLI": {
+      "commandName": "Project",
+      "commandLineArgs": "import\r\n\"C:\\Users\\ghumphrey\\Documents\\Projects\\EarthBound_Zero_Mother_1-u_202305.nes_CLEAN1.cgzf\"\r\n\"C:\\Users\\ghumphrey\\Documents\\Projects\\Ghidra Projects\\ROMs\\earth-bound-zero-mother-1-u_202305\\EarthBound_Zero_Mother_1-u_202305.nes\"\r\n\"C:\\Users\\ghumphrey\\Documents\\Projects\""
+    }
+  }
+}
