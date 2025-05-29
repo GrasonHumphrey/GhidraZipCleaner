@@ -45,4 +45,10 @@ jobs:
         with:
           name: GhidraZipCleaner_CLI
           path: ./GhidraZipCleaner_CLI/bin/Release/net8.0/win-x86/publish
-          
+      
+      # Step 8: Upload the Python3 ZIP as an artifact
+      - name: Upload Python3 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GhidraZipCleaner_Python3
+          path: ./GhidraZipCleaner_Python3
