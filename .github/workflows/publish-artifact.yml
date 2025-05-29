@@ -22,7 +22,7 @@ jobs:
 
       # Step 3: Build the GUI project in Release mode using MSBuild
       - name: Build GUI with MSBuild
-        run: msbuild GhidraZipCleaner.sln /p:Configuration=Release /p:Platform="Any CPU"
+        run: msbuild GhidraZipCleaner.sln -restore /p:Configuration=Release /p:Platform="Any CPU" -p:RestorePackagesConfig=true -p:BuildProjectReferences=true
         
       # Step 4: Restore CLI Build
       - name: Restore CLI Build with MSBuild
