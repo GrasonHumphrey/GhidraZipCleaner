@@ -20,12 +20,15 @@ jobs:
         with:
           msbuild-architecture: x64
 
-      # Step 3: Build the project in Release mode using MSBuild
-      - name: Build with MSBuild
+      # Step 3: Build the GUI project in Release mode using MSBuild
+      - name: Build GUI with MSBuild
         run: msbuild GhidraZipCleaner.sln /p:Configuration=Release /p:Platform="Any CPU"
-        run: msbuild GhidraZipCleaner_CLI.sln /p:Configuration=Release /p:Platform="Any CPU"
-
-      # Step 4: Upload the ZIP as an artifact
+        
+      # Step 4: Build the CLI project in Release mode with MSBuild  
+      -name: Build CLI with MSBuild
+        run: msbuild .\GhidraZipCleaner_CLI\GhidraZipCleaner_CLI.csproj -t:publish -p:OutputType=Exe -p:Configuration=Release -p:BuildProjectReferences=true -p:PublishSingleFile=true -p:RuntimeIdentifier=win-x86 -p:TargetFrameworkVersion=8.0 -restore
+       
+      # Step 5: Upload the ZIP as an artifact
       - name: Upload GUI Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -33,7 +36,9 @@ jobs:
           path: ./GhidraZipCleaner/bin/Release
       
       # Step 5: Upload the CLI ZIP as an artifact
+      - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
         with:
           name: GhidraZipCleaner_CLI
-          path: ./GhidraZipCleaner/bin/Release
+          path: ./GhidraZipCleaner_CLI/bin/Release/net8.0/win-x86/publish
+          
