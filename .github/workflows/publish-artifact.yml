@@ -36,7 +36,7 @@ jobs:
       - name: Upload GUI Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GhidraZipCleaner
+          name: GhidraZipCleaner_GUI
           path: ./GhidraZipCleaner/bin/Release
       
       # Step 7: Upload the CLI ZIP as an artifact
