@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+GhidraZipCleaner_Python3/.vscode/launch.json
+GhidraZipCleaner_CLI/Properties/launchSettings.json

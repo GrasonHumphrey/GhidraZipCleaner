@@ -12,6 +12,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace GhidraZipCleaner
 {
@@ -26,6 +28,15 @@ namespace GhidraZipCleaner
         string cgzfFilename = null;
 
         byte[] romBytes = null;
+
+        int versionMajor = 2;
+        int versionMinor = 0;
+        int versionInfoLen = 2;
+
+        int saltLen = 16;
+
+        bool forceVersion = false;
+        byte[] headerIDStr = { (byte)'C', (byte)'G', (byte)'Z', (byte)'F' };
 
         public Form1()
         {
@@ -111,9 +122,79 @@ namespace GhidraZipCleaner
             }
             return ghidraBytes;
         }
-        
-        private void btn_Import_Click(object sender, EventArgs e)
+
+        byte[] Encrypt_With_ROM(byte[] romBytes, byte[] ghidraBytes, byte[] salt)
         {
+            byte[] keyInfo = Get_Key_Info(romBytes, salt);
+            byte[] encrypted;
+
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.IV = keyInfo.Take(16).ToArray();
+                aesAlg.Key = keyInfo.Skip(32).ToArray();
+
+                // Create an encryptor to perform the stream transform.
+                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+                using (MemoryStream msEncrypt = new MemoryStream())
+                {
+                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                    {
+                        csEncrypt.Write(ghidraBytes, 0, ghidraBytes.Length);
+                    }
+                    encrypted = msEncrypt.ToArray();
+                }
+            }
+            byte[] outBytes = new byte[encrypted.Length + salt.Length];
+            encrypted.CopyTo(outBytes, 0);
+            salt.CopyTo(outBytes, encrypted.Length);
+            return outBytes;
+        }
+
+        byte[] Decrypt_With_ROM(byte[] romBytes, byte[] inBytes, int saltLen)
+        {
+            byte[] salt = inBytes.Skip(inBytes.Length - saltLen).ToArray();
+            byte[] encryptedBytes = inBytes.Take(inBytes.Length - saltLen).ToArray();
+
+            byte[] keyInfo = Get_Key_Info(romBytes, salt);
+            byte[] decrypted = new byte[encryptedBytes.Length];
+
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.IV = keyInfo.Take(16).ToArray();
+                aesAlg.Key = keyInfo.Skip(32).ToArray();
+
+                // Create a decryptor to perform the stream transform.
+                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+                // Create the streams used for decryption.
+                using (MemoryStream msDecrypt = new MemoryStream(encryptedBytes))
+                {
+                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                    {
+                        for (int i = 0; i < encryptedBytes.Length; i++)
+                        {
+                            decrypted[i] = (byte)csDecrypt.ReadByte();
+                        }
+                    }
+                }
+            }
+            return decrypted;
+        }
+
+        byte[] Get_Key_Info(byte[] romBytes, byte[] salt)
+        {
+            using (SHA512 sha512 = SHA512.Create())
+            {
+                byte[] inputBytes = new byte[romBytes.Length + salt.Length];
+                romBytes.CopyTo(inputBytes, 0);
+                salt.CopyTo(inputBytes, romBytes.Length);
+                return sha512.ComputeHash(inputBytes);
+            }
+        }
+
+        private void btn_Import_Click(object sender, EventArgs e)
+        {        
 
             if (srCGZF == null || srCGZF.BaseStream.Length == 0)
             {
@@ -131,15 +212,56 @@ namespace GhidraZipCleaner
             {
                 srCGZF.BaseStream.CopyTo(memstream);
                 cgzfBytes = memstream.ToArray();
-            }            
+            }
+
+            // Check CGZF version
+            bool headerStrFound = true;
+            for (int i = 0; i < headerIDStr.Length; i++)
+            {
+                if (!cgzfBytes[i].Equals(headerIDStr[i]))
+                {
+                    headerStrFound = false; break;
+                }
+            }
+
+            if (headerStrFound)
+            {
+                versionMajor = cgzfBytes[headerIDStr.Length];
+                versionMinor = cgzfBytes[headerIDStr.Length+1];
+            }
+            else
+            {
+                // No header ID found, meaning legacy edition
+                versionMajor = 1;
+                versionMinor = 0;
+            }
 
             // Don't decode the last 16 bytes which make the checksum
-            byte[] outBytes = XOR_All_Bytes(romBytes, cgzfBytes.Take(cgzfBytes.Length-16).ToArray());
+            byte[] outBytes;
+            if (versionMajor == 1)
+            {
+                outBytes = XOR_All_Bytes(romBytes, cgzfBytes.Take(cgzfBytes.Length - 16).ToArray());
+            }
+            else
+            {
+                outBytes = Decrypt_With_ROM(romBytes, cgzfBytes.Take(cgzfBytes.Length - 16).Skip(headerIDStr.Length + versionInfoLen).ToArray(), saltLen);
+            }
+
             byte[] retrievedHash = cgzfBytes.Skip(cgzfBytes.Length - 16).ToArray();
 
             using (var md5 = MD5.Create())
             {
-                byte[] calculatedHash = md5.ComputeHash(outBytes);
+                byte[] calculatedHash;
+                if (versionMajor == 1)
+                {
+                    // Legacy import
+                    outBytes = XOR_All_Bytes(romBytes, cgzfBytes.Take(cgzfBytes.Length - 16).ToArray());
+                    calculatedHash = md5.ComputeHash(outBytes);
+                }
+                else
+                {
+                    calculatedHash = md5.ComputeHash(outBytes.Take(400).ToArray());
+                }
                 if (!Enumerable.SequenceEqual(calculatedHash, retrievedHash))
                 {
                     MessageBox.Show("Error: File checksum does not match expected. \n\n" +
@@ -171,6 +293,11 @@ namespace GhidraZipCleaner
 
         private void btn_Export_Click(object sender, EventArgs e)
         {
+            // Generate random salt
+            byte[] salt = new byte[saltLen];
+
+            Random rand = new Random();
+            rand.NextBytes(salt);
 
             if (srGZF == null || srGZF.BaseStream.Length == 0)
             {
@@ -194,9 +321,27 @@ namespace GhidraZipCleaner
 
             using (var md5 = MD5.Create())
             {
-                byte[] hash = md5.ComputeHash(gzfBytes);
-                XOR_All_Bytes(romBytes, gzfBytes).CopyTo(outBytes, 0);
-                hash.CopyTo(outBytes, gzfBytes.Length);
+                byte[] hash;
+
+                if (versionMajor == 1)
+                {
+                    outBytes = new byte[gzfBytes.Length + 16];
+                    hash = md5.ComputeHash(gzfBytes);
+                    XOR_All_Bytes(romBytes, gzfBytes).CopyTo(outBytes, 0);
+                    hash.CopyTo(outBytes, gzfBytes.Length);
+                }
+                else
+                {
+                    hash = md5.ComputeHash(gzfBytes.Take(400).ToArray());
+                    byte[] encryptedBytes = Encrypt_With_ROM(romBytes, gzfBytes, salt);
+                    // Outbytes needs to hold header ID, version number, encrypted bytes, and hash
+                    outBytes = new byte[headerIDStr.Length + versionInfoLen + encryptedBytes.Length + hash.Length];
+                    headerIDStr.CopyTo(outBytes, 0);
+                    outBytes[headerIDStr.Length] = (byte)versionMajor;
+                    outBytes[headerIDStr.Length+1] = (byte)versionMinor;
+                    encryptedBytes.CopyTo(outBytes, headerIDStr.Length + versionInfoLen);
+                    hash.CopyTo(outBytes, headerIDStr.Length + versionInfoLen + encryptedBytes.Length);
+                }
             }
 
             saveFileDialogCGZF.FileName = gzfFilename + "_CLEAN";
